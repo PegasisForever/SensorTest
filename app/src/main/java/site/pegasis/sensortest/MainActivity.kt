@@ -1,46 +1,51 @@
 package site.pegasis.sensortest
 
+import android.content.BroadcastReceiver
 import android.content.Context
-import android.hardware.Sensor
-import android.hardware.SensorEvent
-import android.hardware.SensorEventListener
-import android.hardware.SensorManager
-import android.support.v7.app.AppCompatActivity
+import android.content.Intent
+import android.content.IntentFilter
+import android.os.BatteryManager
 import android.os.Bundle
+import android.support.v7.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
 
+
 class MainActivity : AppCompatActivity() {
-    private lateinit var sensorManager: SensorManager
-    private lateinit var sensor: Sensor
+    private lateinit var intentFilter: IntentFilter
 
-    private val l=listener()
+    private val broadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            val level = intent.getIntExtra("level", 0) //电池电量，数字
+            val plugged = intent.getIntExtra("plugged", 0) //充电类型
+            val voltage = intent.getIntExtra("voltage", 0) //电+池伏数
+            val temperature = intent.getIntExtra("temperature", 0)//电池温度
+            val acString=when (plugged) {
+                BatteryManager.BATTERY_PLUGGED_AC ->"交流电充电"
+                BatteryManager.BATTERY_PLUGGED_USB ->"usb充电"
+                else -> ""
+            }
+            val s = ("电量:" + level + "%\n"
+                    + "电压:" + voltage + "mv\n"
+                    + "温度:" + temperature/10 + "℃\n"
+                    + acString + "\n")
 
-    inner class listener:SensorEventListener{
-        override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
-
+            runOnUiThread {
+                tv.text=s
+            }
         }
-
-        override fun onSensorChanged(event: SensorEvent) {
-            tv.text=event.values[0].toString()
-        }
-
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        sensorManager=getSystemService(Context.SENSOR_SERVICE) as SensorManager
-        sensor=sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT)
-    }
-
-    override fun onResume() {
-        super.onResume()
-        sensorManager.registerListener(l,sensor,SensorManager.SENSOR_DELAY_UI)
+        intentFilter = IntentFilter()
+        intentFilter.addAction(Intent.ACTION_BATTERY_CHANGED)
+        registerReceiver(broadcastReceiver, intentFilter)
     }
 
     override fun onStop() {
         super.onStop()
-        sensorManager.unregisterListener(l)
+        unregisterReceiver(broadcastReceiver)
     }
 }
