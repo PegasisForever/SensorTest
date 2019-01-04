@@ -12,6 +12,7 @@ import kotlinx.android.synthetic.main.activity_main.*
 class MainActivity : AppCompatActivity() {
     private lateinit var sensorManager: SensorManager
     private lateinit var sensor: Sensor
+
     private val l=listener()
 
     inner class listener:SensorEventListener{
